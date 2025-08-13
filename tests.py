@@ -36,6 +36,15 @@ class TestState(unittest.TestCase):
     state.apply(bonus)
     self.assertEqual(5, state.persuasion)
 
+  def test_apply_complex(self):
+    augment = AUGMENTS["Eagle Eyes"]
+    friend = FRIENDS["Dys"]
+    state = State()
+    state.apply(augment)
+    self.assertEqual(["perception", "animals"], state.rewards)
+    state.apply(friend)
+    self.assertEqual(21, state.perception)
+
 class TestBonus(unittest.TestCase):
   def test_init(self):
     bonus = Bonus(name="Test")

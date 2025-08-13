@@ -30,6 +30,17 @@ class Stats(ABC):
       output = f"{output}\n{chara} - {getattr(self, chara.lower())}"
     return output
 
+  def check_primary(self, skill, state):
+    """
+    Check if the state should be given an extra point according to primary skill
+
+    Arguments:
+        state -- State object
+    """
+    if skill in state.rewards:
+      return True
+    return False
+
 class State(Stats):
   """
   Class to hold the current state and skills
@@ -41,6 +52,7 @@ class State(Stats):
     super().__init__(*args, **kwargs)
     self.age = 10
     self.month = 0
+    self.rewards = []
 
   def apply(self, bonus):
     """
@@ -55,9 +67,13 @@ class State(Stats):
         before = getattr(self, attr)
         increase = getattr(bonus, attr)
         new = before + increase
+        if attr in self.rewards and increase > 0:
+          new += 1
         setattr(self, attr, new)
+    
     if "rewards" in dir(bonus):
-      self.rewards = getattr(bonus, "rewards")
+      self.rewards = bonus.rewards
+
 
   def do_job(self, job):
     """
@@ -88,16 +104,7 @@ class Activity(Stats):
   def __init__(self, name, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
-  def check_primary(self, skill, state):
-    """
-    Check if the state should be given an extra point according to primary skill
 
-    Arguments:
-        state -- State object
-    """
-    if skill in state.rewards:
-      return True
-    return False
 
 
 JOBS = {
