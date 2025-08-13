@@ -17,6 +17,8 @@ class Stats(ABC):
   def __init__(self, *args, **kwargs):
     for attr in ALL_ATTRs:
       setattr(self, attr.lower(), 0)
+    for arg in kwargs:
+      setattr(self, arg, kwargs[arg])
 
   def output(self):
     output = ""
@@ -40,6 +42,32 @@ class State(Stats):
     self.age = 10
     self.month = 0
 
+  def apply(self, bonus):
+    """
+    Apply a bonus to the state
+
+    Arguments:
+        bonus -- Bonus object
+    """
+    for attr in ALL_ATTRs:
+      attr = attr.lower()
+      if getattr(bonus, attr):
+        before = getattr(self, attr)
+        increase = getattr(bonus, attr)
+        new = before + increase
+        setattr(self, attr, new)
+    if "rewards" in dir(bonus):
+      self.rewards = getattr(bonus, "rewards")
+
+  def do_job(self, job):
+    """
+    Apply an activity to the state
+
+    Arguments:
+        job -- Activity object
+    """
+    pass
+
 class Bonus(Stats):
   """
   Class to hold bonuses to your stats, normally used during character creation
@@ -59,6 +87,17 @@ class Activity(Stats):
   """
   def __init__(self, name, *args, **kwargs):
     super().__init__(*args, **kwargs)
+
+  def check_primary(self, skill, state):
+    """
+    Check if the state should be given an extra point according to primary skill
+
+    Arguments:
+        state -- State object
+    """
+    if skill in state.rewards:
+      return True
+    return False
 
 
 JOBS = {
