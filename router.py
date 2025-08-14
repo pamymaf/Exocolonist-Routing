@@ -158,7 +158,8 @@ class Activity(Stats):
   Arguments:
       Stats -- Abstract class
   """
-  def __init__(self, name, threshold=7, *args, **kwargs):
+  def __init__(self, name, *args, threshold=7, **kwargs):
+    self.threshold = threshold
     super().__init__(*args, **kwargs)
   
   def check_threshold(self, skill, state):
