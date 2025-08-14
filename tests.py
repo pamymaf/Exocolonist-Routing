@@ -71,6 +71,62 @@ class TestState(unittest.TestCase):
     state.do_job(activity)
     self.assertEqual(13, state.stress)
 
+  def test_do_job_time(self):
+    state = State()
+    activity = JOBS["Shovelling Dirt"]
+    state.do_job(activity)
+    self.assertEqual(10, state.age)
+    self.assertEqual(2, state.month)
+
+  def test_undo_job_simple(self):
+    state = State()
+    activity = JOBS["Shovelling Dirt"]
+    state.do_job(activity)
+    self.assertEqual(3, state.toughness)
+    self.assertEqual(15, state.stress)
+    state.undo_job()
+    self.assertEqual(0, state.toughness)
+    self.assertEqual(0, state.stress)
+
+  def test_undo_job_stress(self):
+    state = State()
+    augment = AUGMENTS["Calm Temperament"]
+    activity = JOBS["Shovelling Dirt"]
+    state.apply(augment)
+    state.do_job(activity)
+    self.assertEqual(3, state.toughness)
+    self.assertEqual(13, state.stress)
+    state.undo_job()
+    self.assertEqual(0, state.toughness)
+    self.assertEqual(0, state.stress)
+
+  def test_undo_job_primary(self):
+    state = State()
+    augment = AUGMENTS["Super Strength"]
+    activity = JOBS["Shovelling Dirt"]
+    state.apply(augment)
+    state.do_job(activity)
+    self.assertEqual(4, state.toughness)
+    self.assertEqual(15, state.stress)
+    state.undo_job()
+    self.assertEqual(0, state.toughness)
+    self.assertEqual(0, state.stress)
+
+  def test_undo_job_threshold(self):
+    state = State()
+    activity = JOBS["Shovelling Dirt"]
+    state.do_job(activity)
+    self.assertEqual(3, state.toughness)
+    self.assertEqual(15, state.stress)
+    state.do_job(activity)
+    self.assertEqual(6, state.toughness)
+    state.do_job(activity)
+    self.assertEqual(9, state.toughness)
+    state.do_job(activity)
+    self.assertEqual(13, state.toughness)
+    state.undo_job()
+    self.assertEqual(9, state.toughness)
+
 class TestBonus(unittest.TestCase):
   def test_init(self):
     bonus = Bonus(name="Test")
@@ -83,12 +139,12 @@ class TestActivity(unittest.TestCase):
     for attr in ALL_ATTRs:
       self.assertEqual(0, getattr(activity, attr.lower()))
   
-  def test_check_primary(self):
+  def test_check_reward(self):
     activity = JOBS["Xenobotany"]
     bonus = AUGMENTS["Super Strength"]
     state = State()
     state.apply(bonus)
-    result = activity.check_primary("toughness", state)
+    result = activity.check_reward("toughness", state)
     self.assertEqual(True, result)
 
   def test_check_threshold(self):

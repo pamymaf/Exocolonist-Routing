@@ -30,7 +30,7 @@ class Stats(ABC):
       output = f"{output}\n{chara} - {getattr(self, chara.lower())}"
     return output
 
-  def check_primary(self, skill, state):
+  def check_reward(self, skill, state):
     """
     Check if the state should be given an extra point according to matching augment skill
 
@@ -52,8 +52,9 @@ class State(Stats):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
     self.age = 10
-    self.month = 0
+    self.month = 1
     self.rewards = []
+    self.job_list = [] # [(Activity, threshold_met, prev_stress)] - Makes it easier to undo
 
   def apply(self, bonus):
     """
@@ -83,20 +84,62 @@ class State(Stats):
     Arguments:
         job -- Activity object
     """
+    threshold = False
+    old_stress = self.stress
     for attr in ALL_ATTRs:
       attr = attr.lower()
       job_value = getattr(job, attr)
       if job_value > 0:
         old = getattr(self, attr)
         new = old + job_value
-        if job.check_primary(attr, self):
+        if job.check_reward(attr, self):
           if self.rewards == ["stress"]:
             new -= 2
           else:
             new += 1
         if job.check_threshold(attr, self):
+          threshold = True
           new += 1
         setattr(self, attr, new)
+    self.job_list.append((job, threshold, old_stress))
+
+    if self.month < 13:
+      self.month += 1
+    elif self.month == 13:
+      self.age += 1
+      self.month = 1
+
+  def undo_job(self):
+    """
+    Unapply the last activity/job from the state
+    """
+    old_job = self.job_list[-1]
+    job = old_job[0]
+    threshold = old_job[1]
+    old_stress = old_job[2]
+    for attr in ALL_ATTRs:
+      attr = attr.lower()
+      if attr == "stress":
+        continue # We deal with this later
+      else:
+        previous = getattr(self, attr)
+        decrease = getattr(job, attr)
+        if decrease > 0:
+          if job.check_reward(attr, self):
+            decrease += 1
+          if attr == job.primary and threshold:
+            decrease += 1
+          new = previous - decrease
+          setattr(self, attr, new)
+
+    if self.month == 1:
+      self.age -= 1
+      self.month = 13
+    else:
+      self.month -= 1
+    
+    self.stress = old_stress
+    self.job_list.pop()
 
 class Bonus(Stats):
   """
@@ -115,7 +158,7 @@ class Activity(Stats):
   Arguments:
       Stats -- Abstract class
   """
-  def __init__(self, name, *args, **kwargs):
+  def __init__(self, name, threshold=7, *args, **kwargs):
     super().__init__(*args, **kwargs)
   
   def check_threshold(self, skill, state):
