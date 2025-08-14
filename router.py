@@ -32,9 +32,10 @@ class Stats(ABC):
 
   def check_primary(self, skill, state):
     """
-    Check if the state should be given an extra point according to primary skill
+    Check if the state should be given an extra point according to matching augment skill
 
     Arguments:
+        skill -- Skill to check
         state -- State object
     """
     if skill in state.rewards:
@@ -77,12 +78,25 @@ class State(Stats):
 
   def do_job(self, job):
     """
-    Apply an activity to the state
+    Apply an activity/job to the state
 
     Arguments:
         job -- Activity object
     """
-    pass
+    for attr in ALL_ATTRs:
+      attr = attr.lower()
+      job_value = getattr(job, attr)
+      if job_value > 0:
+        old = getattr(self, attr)
+        new = old + job_value
+        if job.check_primary(attr, self):
+          if self.rewards == ["stress"]:
+            new -= 2
+          else:
+            new += 1
+        if job.check_threshold(attr, self):
+          new += 1
+        setattr(self, attr, new)
 
 class Bonus(Stats):
   """
@@ -103,6 +117,22 @@ class Activity(Stats):
   """
   def __init__(self, name, *args, **kwargs):
     super().__init__(*args, **kwargs)
+  
+  def check_threshold(self, skill, state):
+    """
+    Check if state stat score passes the threshold to receive a bonus point
+
+    Arguments:
+        skill -- Skill to check
+        state -- State object
+    """
+    if skill != self.primary:
+      return False
+    elif getattr(state, skill) > self.threshold:
+      return True
+    else:
+      return False
+    
 
 
 

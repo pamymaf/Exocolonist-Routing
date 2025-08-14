@@ -45,6 +45,32 @@ class TestState(unittest.TestCase):
     state.apply(friend)
     self.assertEqual(21, state.perception)
 
+  def test_do_job_threshold(self):
+    state = State()
+    activity = JOBS["Shovelling Dirt"]
+    state.do_job(activity)
+    self.assertEqual(3, state.toughness)
+    self.assertEqual(15, state.stress)
+    state.do_job(activity)
+    self.assertEqual(6, state.toughness)
+    state.do_job(activity)
+    self.assertEqual(9, state.toughness)
+    state.do_job(activity)
+    self.assertEqual(13, state.toughness)
+  
+  def test_do_job_primary(self):
+    state = State()
+    activity = JOBS["Shovelling Dirt"]
+    state.apply(AUGMENTS["Super Strength"])
+    state.do_job(activity)
+    self.assertEqual(4, state.toughness)
+    self.assertEqual(15, state.stress)
+
+    state = State()
+    state.apply(AUGMENTS["Calm Temperament"])
+    state.do_job(activity)
+    self.assertEqual(13, state.stress)
+
 class TestBonus(unittest.TestCase):
   def test_init(self):
     bonus = Bonus(name="Test")
@@ -64,6 +90,18 @@ class TestActivity(unittest.TestCase):
     state.apply(bonus)
     result = activity.check_primary("toughness", state)
     self.assertEqual(True, result)
+
+  def test_check_threshold(self):
+    activity = JOBS["Shovelling Dirt"] # toughness threshold of 6
+    state = State()
+    state.toughness = 5
+    self.assertEqual(False, activity.check_threshold("toughness", state))
+    state.toughness = 6
+    self.assertEqual(False, activity.check_threshold("toughness", state))
+    state.toughness = 7
+    self.assertEqual(True, activity.check_threshold("toughness", state))
+    state.biology = 7
+    self.assertEqual(False, activity.check_threshold("biology", state))
     
 
 if __name__ == '__main__':
