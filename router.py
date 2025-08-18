@@ -5,7 +5,7 @@ YELLOW_SKILLS = ["Empathy", "Creativity", "Persuasion", "Bravery"]
 BLUE_SKILLS = ["Reasoning", "Organization", "Biology", "Engineering"]
 RED_SKILLS = ["Toughness", "Perception", "Combat", "Animals"]
 CHARACTERS = ["Nomi", "Vace", "Rex", "Anemone", "Cal", "Dys", "Marz", "Tammy", "Tangent"]
-ALL_ATTRs = YELLOW_SKILLS + BLUE_SKILLS + RED_SKILLS + CHARACTERS + ["Stress"]
+ALL_ATTRs = ["Stress"] + YELLOW_SKILLS + BLUE_SKILLS + RED_SKILLS + CHARACTERS
 
 class Stats(ABC):
   """
