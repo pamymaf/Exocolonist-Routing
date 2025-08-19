@@ -217,7 +217,7 @@ JOBS = {
   "Cooking": Activity("Cooking", "Living Quarters", empathy=2, creativity=3, stress=10, primary="creativity"),
   "Barista": Activity("Barista", "Living Quarters", empathy=4, creativity=3, stress=15, primary="empathy"),
   
-  "Deliver Supplies": Activity("Deliver Supplies", "Command", organization=3, perception=1, stress=10),
+  "Deliver Supplies": Activity("Deliver Supplies", "Command", organization=3, perception=1, stress=10, primary="organization", threshold=6),
   "Depot Clerk": Activity("Depot Clerk", "Command", persuasion=2, organization=3, stress=10, primary="organization"),
   "Construction": Activity("Construction", "Command", engineering=4, toughness=2, stress=15, primary="engineering"),
   "Administration": Activity("Administration", "Command", persuasion=4, organization=3, stress=10, primary="persuasion"),
@@ -250,6 +250,9 @@ START_STORIES = {"Futurism": Bonus("Futurism", engineering=5),
   "Tradition": Bonus("Tradition", creativity=5), 
   "Ship Engineering Manuals": Bonus("Ship Engineering Manuals", engineering=5)}
 
+ALL_BONUSES = {**AUGMENTS, **FRIENDS, **START_ITEMS, **START_STORIES}
+
+ALL_CHOICES = {**ALL_BONUSES, **JOBS}
 
 if __name__ == '__main__':
   state = State()

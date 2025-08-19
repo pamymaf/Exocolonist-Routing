@@ -54,15 +54,22 @@ class MainWindow(QMainWindow):
     
     
     #SECTION Choice area
-    self.choice_area = QHBoxLayout()
+    self.choice_area = QVBoxLayout()
+    self.choice_display = QLabel("")
+    self.choice_info = QLabel("")
+    self.confirm_button = QPushButton("")
+    self.choice_buttons = {}
 
 
     #SECTION Setup
     self.wrapper.addLayout(self.menu_area, 0, 0)
     self.wrapper.addLayout(self.stats_area, 1, 0)
+    self.wrapper.addLayout(self.choice_area, 1, 1)
     widget = QWidget()
     widget.setLayout(self.wrapper)
     self.setCentralWidget(widget)
+
+    self.ask("What augment do you choose?", AUGMENTS)
 
   def reset(self):
     """
@@ -70,10 +77,77 @@ class MainWindow(QMainWindow):
     """
     self.refresh_stats()
 
+  def clear_choice_buttons(self):
+    """
+    Delete all buttons in the choices area
+    """
+    for choice in self.choice_buttons:
+      button = self.choice_buttons[choice]
+      self.choice_area.removeWidget(button)
+    self.choice_buttons = {}
+    self.clear_choice_display()
+
+  def clear_choice_display(self):
+    self.choice_area.removeWidget(self.choice_display)
+    self.choice_area.removeWidget(self.choice_info)
+    self.choice_area.removeWidget(self.confirm_button)
+    self.choice_display = QLabel("")
+    self.choice_info = QLabel("")
+    self.confirm_button = QPushButton("")
+
+  def refresh_choice_display(self, choice):
+    """
+    Refresh the choice display and choice info
+
+    Arguments:
+        choice -- Choice to display
+        extra -- Extra info about the choice to display
+    """
+    self.clear_choice_display()
+
+    extra = ""
+    if choice in ALL_BONUSES:
+      attrs = dir(ALL_BONUSES[choice])
+      for attr in attrs:
+        value = getattr(ALL_BONUSES[choice], attr)
+        if not attr.startswith("_") and (isinstance(value, list) or (isinstance(value, int) and value > 0)) and attr != "name":
+          extra = f"{extra}{attr} - {value}\n"
+    elif choice in JOBS:
+      job = JOBS[choice]
+      for attr in dir(job):
+        if not attr.startswith("_") and isinstance(getattr(job, attr), int) and attr != "threshold":
+          value = getattr(job, attr)
+          if getattr(job, attr) != 0:
+            before = getattr(self.state, attr)
+            increase = getattr(job, attr)
+            if job.check_bonus(self.state, attr):
+              extra = f"{extra}{attr} - {increase + 1}\n"
+            elif increase != 0:
+              extra = f"{extra}{attr} - {increase}\n"
+    elif choice in ["1st playthrough", "2nd+ playthrough", "Yes", "No"]:
+      extra = ""
+    elif choice == "":
+      choice = ""
+      extra = ""
+    else:
+      choice = "INVALID"
+      extra = "Choice invalid"
+
+    self.choice_display = QLabel(choice)
+    self.choice_info = QLabel(extra)
+    self.confirm_button = QPushButton("Confirm")
+    self.confirm_button.clicked.connect(self.confirm)
+
+    self.choice_area.addWidget(self.choice_display)
+    self.choice_area.addWidget(self.choice_info)
+    self.choice_area.addWidget(self.confirm_button)
+
+
   def undo_job(self):
     """
     Undo the last job
     """
+    self.state.undo_job()
     self.refresh_stats()
 
   def refresh_stats(self):
@@ -97,6 +171,60 @@ class MainWindow(QMainWindow):
       label = QLabel(f"{chara} - {getattr(self.state, chara.lower())}")
       self.stats_labels.append(label)
       self.stats_area.addWidget(label)
+
+  def ask(self, question, choices):
+    """
+    Ask a question and make a button for each choice
+
+    Arguments:
+        question -- Question to ask
+        choices -- List of choices
+    """
+    self.clear_choice_buttons()
+    self.clear_choice_display()
+    for choice in choices:
+      button = QPushButton(choice)
+      button.clicked.connect(self.select)
+      self.choice_buttons[choice] = button
+      self.choice_area.addWidget(button)
+    self.choice_display = QLabel(question)
+    self.choice_area.addWidget(self.choice_display)
+  
+  def select(self):
+    """
+    Capture the user's choice and update the confirmation display
+    """
+    choice = self.sender().text()
+    self.refresh_choice_display(choice)
+
+  def confirm(self):
+    """
+    Apply the user's selection
+    """
+    choice = self.choice_display.text()
+    print(choice)
+    if choice in AUGMENTS:
+      self.state.apply(AUGMENTS[choice])
+      self.ask("Who is your bestest friend?", FRIENDS)
+    elif choice in FRIENDS:
+      self.state.apply(FRIENDS[choice])
+      self.ask("Is this the first playthrough?", ["1st playthrough", "2nd+ playthrough"])
+    elif choice == "1st playthrough":
+      # MAIN LOOP
+      pass
+    elif choice == "2nd+ playthrough":
+      self.ask("What is your favorite bedtime story?", START_STORIES)
+    elif choice in START_STORIES:
+      self.state.apply(START_STORIES[choice])
+      self.ask("What is your favorite item?", START_ITEMS)
+    elif choice in START_ITEMS:
+      # MAIN LOOP
+      pass
+    elif choice in JOBS:
+      self.state.do_job(JOBS[job])
+    self.refresh_stats()
+    
+
 
 if __name__ == "__main__":
   app = QApplication(sys.argv)
