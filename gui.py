@@ -61,6 +61,12 @@ class MainWindow(QMainWindow):
     self.choice_buttons = {}
 
 
+    #SECTION Jobs area
+    self.job_area = QHBoxLayout()
+    self.job_locations_areas = {}
+    self.job_buttons = {}
+
+
     #SECTION Setup
     self.wrapper.addLayout(self.menu_area, 0, 0)
     self.wrapper.addLayout(self.stats_area, 1, 0)
@@ -88,6 +94,9 @@ class MainWindow(QMainWindow):
     self.clear_choice_display()
 
   def clear_choice_display(self):
+    """
+    Clear the choice display, extra info display, and confirm button
+    """
     self.choice_area.removeWidget(self.choice_display)
     self.choice_area.removeWidget(self.choice_info)
     self.choice_area.removeWidget(self.confirm_button)
@@ -120,15 +129,23 @@ class MainWindow(QMainWindow):
           if getattr(job, attr) != 0:
             before = getattr(self.state, attr)
             increase = getattr(job, attr)
-            if job.check_bonus(self.state, attr):
-              extra = f"{extra}{attr} - {increase + 1}\n"
-            elif increase != 0:
+            if attr != "stress":
+              if job.check_threshold(attr, self.state):
+                increase += 1
+              if job.check_reward(attr, self.state):
+                increase += 1
+            elif attr == "stress" and job.check_reward(attr, self.state) and job.stress != -100:
+              increase -= 2
+            if increase != 0:
               extra = f"{extra}{attr} - {increase}\n"
     elif choice in ["1st playthrough", "2nd+ playthrough", "Yes", "No"]:
       extra = ""
     elif choice == "":
       choice = ""
       extra = ""
+    elif choice == "stressed":
+      choice = "You are too stressed for that"
+      extra = "Please rest"
     else:
       choice = "INVALID"
       extra = "Choice invalid"
@@ -172,6 +189,37 @@ class MainWindow(QMainWindow):
       self.stats_labels.append(label)
       self.stats_area.addWidget(label)
 
+  def populate_jobs(self):
+    """
+    Make a button for each job
+    """
+    self.clear_choice_buttons()
+    self.clear_choice_display()
+    self.choice_display = QLabel("What job would you like to do?")
+    self.choice_area.addWidget(self.choice_display)
+    
+    for job in JOBS:
+      job = JOBS[job]
+      if not job.location in self.job_locations_areas:
+        self.job_locations_areas[job.location] = QVBoxLayout()
+        self.job_buttons[job.location] = []
+        location_area = self.job_locations_areas[job.location]
+        location_label = QLabel(job.location, alignment=Qt.AlignmentFlag.AlignTop)
+        location_area.addWidget(location_label)
+        self.job_buttons[job.location].append(location_label)
+      location_area = self.job_locations_areas[job.location]
+      button = QPushButton(job.name)
+      button.clicked.connect(self.select)
+      location_area.addWidget(button)
+      self.job_buttons[job.location].append(button)
+
+    for location in self.job_locations_areas:
+      location_area = self.job_locations_areas[location]
+      
+      self.job_area.addLayout(location_area)
+    self.wrapper.addWidget(self.undo_button,0,1)
+    self.wrapper.addLayout(self.job_area, 1,2)
+
   def ask(self, question, choices):
     """
     Ask a question and make a button for each choice
@@ -210,18 +258,20 @@ class MainWindow(QMainWindow):
       self.state.apply(FRIENDS[choice])
       self.ask("Is this the first playthrough?", ["1st playthrough", "2nd+ playthrough"])
     elif choice == "1st playthrough":
-      # MAIN LOOP
-      pass
+      self.populate_jobs()
     elif choice == "2nd+ playthrough":
       self.ask("What is your favorite bedtime story?", START_STORIES)
     elif choice in START_STORIES:
       self.state.apply(START_STORIES[choice])
       self.ask("What is your favorite item?", START_ITEMS)
     elif choice in START_ITEMS:
-      # MAIN LOOP
-      pass
+      self.populate_jobs()
     elif choice in JOBS:
-      self.state.do_job(JOBS[job])
+      if self.state.stress >= 100 and JOBS[choice].stress != -100:
+        self.refresh_choice_display("stressed")
+      else:
+        self.state.do_job(JOBS[choice])
+        self.refresh_choice_display(choice)
     self.refresh_stats()
     
 

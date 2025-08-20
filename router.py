@@ -89,7 +89,9 @@ class State(Stats):
     for attr in ALL_ATTRs:
       attr = attr.lower()
       job_value = getattr(job, attr)
-      if job_value > 0:
+      if attr == "stress" and job_value < 0:
+        self.stress = 0
+      elif job_value > 0:
         old = getattr(self, attr)
         new = old + job_value
         if job.check_reward(attr, self):
@@ -158,8 +160,10 @@ class Activity(Stats):
   Arguments:
       Stats -- Abstract class
   """
-  def __init__(self, name, *args, threshold=7, **kwargs):
+  def __init__(self, name, location, *args, threshold=7, **kwargs):
     self.threshold = threshold
+    self.name = name
+    self.location = location
     super().__init__(*args, **kwargs)
   
   def check_threshold(self, skill, state):
@@ -185,7 +189,7 @@ JOBS = {
   "Xenobotany": Activity("Xenobotany", "Geoponics", organization=2, biology=3, stress=10, primary="biology"),
   "Shovelling Dirt": Activity("Shovelling Dirt", "Geoponics", toughness=3, stress=15, primary="toughness", threshold=6),
   "Farming": Activity("Farming", "Geoponics", biology=3, toughness=2, stress=10, primary="biology"),
-  "Relax in the Park": Activity("Relax in the Park", "Geoponics", stress=-100),
+  "Relax in the Park": Activity("Relax in the Park", "Geoponics", stress=-100, primary="stress"),
   "Tending Animals": Activity("Tending Animals", "Geoponics", empathy=2, animals=4, stress=10, primary="animals"),
 
   "Study Life Sciences": Activity("Study Life Sciences", "Engineering", reasoning=1, biology=3, stress=15, primary="biology", threshold=7),
